@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info:
+  title: Global ESG Regulation API for KR Business
+  description: 한국 수출 기업(B2B)을 위한 글로벌 ESG 규제 실시간 분석 및 대응 가이드 제공 API.
+  version: 1.0.0
+servers:
+  - url: https://geonchicshin-rgb.github.io/global-regulation-api
+paths:
+  /global_esg_live.json:
+    get:
+      summary: 실시간 글로벌 ESG 규제 데이터 가져오기
+      operationId: getLatestESGData
+      responses:
+        '200':
+          description: 성공적으로 데이터를 가져왔습니다.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    source_title:
+                      type: string
+                      description: 한국어로 번역된 뉴스 제목
+                    original_link:
+                      type: string
+                      description: 원본 뉴스 링크
+                    published_date:
+                      type: string
+                      description: 뉴스 발행일 (YYYY-MM-DD)
+                    global_regulation_trend:
+                      type: string
+                      description: 글로벌 규제 동향 요약 (한국어)
+                    warning_for_KR_business:
+                      type: string
+                      description: 한국 수출 기업이 주의해야 할 필수 대응 사항 (한국어)
