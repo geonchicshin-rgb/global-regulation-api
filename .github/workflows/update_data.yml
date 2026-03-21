@@ -1,0 +1,39 @@
+name: Daily AI Data Harvester
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # 매일 한국 시간 새벽 3시(UTC 18시)에 자동 실행
+  workflow_dispatch: # 수동 실행을 위한 버튼 활성화
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # AI가 만든 파일을 깃허브에 덮어쓸 수 있는 권한
+
+    steps:
+      - name: 1. 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: 2. 파이썬 세팅
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 3. 구글 AI 라이브러리 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-generativeai
+
+      - name: 4. AI 가동! (비밀번호 자동 연결)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python main.py
+
+      - name: 5. 완성된 데이터를 깃허브에 저장(Commit & Push)
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add cbam_data.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 AI Data Auto-Update: 데이터 갱신"
+          git push
