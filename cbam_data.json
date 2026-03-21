@@ -1,0 +1,10 @@
+{
+  "regulation_target": "EU 탄소국경조정제도(CBAM) 철강 및 알루미늄 품목 배출량 산정 기준",
+  "affected_industry": [
+    "철강",
+    "알루미늄"
+  ],
+  "expected_tax_penalty": "인정 오차율 2.5% 초과 시 1톤당 50유로 패널티 부과 및 미제출 시 수출 통관 보류",
+  "compliance_deadline": "2026-03-25",
+  "action_required_for_KR_exporters": "분기별 실측 데이터를 EU 포털 시스템(CBAM Registry)에 직접 제출"
+}
