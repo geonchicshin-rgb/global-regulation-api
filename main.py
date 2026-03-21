@@ -57,9 +57,30 @@ print("🧠 AI 분석 및 JSON 가공 중...")
 response = model.generate_content(prompt)
 parsed_json = json.loads(response.text)
 
-# 5. 완성된 데이터를 파일로 덮어쓰기 저장
+# 5. 기존 데이터를 불러와서 새로운 데이터를 누적(Append)하여 저장
 file_name = 'global_esg_live.json'
-with open(file_name, 'w', encoding='utf-8') as f:
-    json.dump(parsed_json, f, indent=2, ensure_ascii=False)
+existing_data = []
 
-print(f"✅ 실시간 글로벌 규제 데이터 저장 완료: {file_name}")
+# 기존 파일이 있으면 열어서 데이터를 가져옵니다.
+if os.path.exists(file_name):
+    with open(file_name, 'r', encoding='utf-8') as f:
+        try:
+            existing_data = json.load(f)
+        except json.JSONDecodeError:
+            existing_data = []
+
+# 만약 기존 데이터가 리스트(배열) 형태가 아니라면 리스트로 바꿉니다.
+if not isinstance(existing_data, list):
+    existing_data = [existing_data]
+
+# 방금 막 번역/분석한 따끈따끈한 새 데이터를 리스트의 '맨 앞'에 추가합니다.
+existing_data.insert(0, parsed_json)
+
+# 파일 용량이 무한정 커지는 것을 막기 위해 최신 뉴스 100개까지만 유지합니다.
+existing_data = existing_data[:100]
+
+# 다시 파일로 저장합니다.
+with open(file_name, 'w', encoding='utf-8') as f:
+    json.dump(existing_data, f, indent=2, ensure_ascii=False)
+
+print(f"✅ 실시간 글로벌 규제 데이터 누적 저장 완료 (현재 총 {len(existing_data)}건): {file_name}")
