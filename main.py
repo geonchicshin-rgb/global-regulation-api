@@ -1,45 +1,65 @@
 import os
-import google.generativeai as genai
 import json
+import requests
+from bs4 import BeautifulSoup
+import google.generativeai as genai
 
-# 1. 깃허브 금고(Secrets)에서 API 키를 몰래 꺼내옵니다.
+# 1. 깃허브 금고에서 API 키 로드
 API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=API_KEY)
 
-# 2. 3.x Flash 엔진 점화
+# 2. 3.x Flash 엔진 점화 (JSON 강제화)
 model = genai.GenerativeModel(
     model_name="gemini-3-flash-preview", 
     generation_config={"temperature": 0.1, "response_mime_type": "application/json"}
 )
 
-# 3. 타겟 데이터 (추후 이 부분은 실제 크롤링 코드로 대체됩니다)
-raw_text_data = """
-[환경부 공지] 2026년 4월 1일부터 EU 탄소국경조정제도(CBAM)의 철강 및 알루미늄 품목 배출량 산정 기준이 대폭 강화됩니다.
-기존 대비 인정 오차율이 5%에서 2.5%로 축소되며, 이를 초과할 경우 1톤당 50유로의 패널티가 부과될 예정입니다.
-한국 수출 기업들은 2026년 3월 25일까지 반드시 분기별 실측 데이터를 EU 포털 시스템(CBAM Registry)에 직접 제출해야 합니다. 
-기간 내 미제출 시 유럽 내 수출 통관이 즉각 보류될 수 있습니다.
+# 3. [웹 크롤러 가동] 구글 뉴스 글로벌 RSS (키워드: ESG regulation)
+rss_url = "https://news.google.com/rss/search?q=ESG+regulation&hl=en-US&gl=US&ceid=US:en"
+print("🌐 글로벌 RSS 피드 접속 중...")
+response = requests.get(rss_url)
+soup = BeautifulSoup(response.content, 'xml') # XML 파싱
+
+# 가장 최신 뉴스 1개만 정밀 타겟팅하여 추출
+latest_item = soup.find('item')
+news_title = latest_item.title.text
+news_date = latest_item.pubDate.text
+news_link = latest_item.link.text
+
+print(f"🎯 사냥 성공: [ {news_title} ]")
+
+# AI에게 먹일 먹이(날것의 영문 데이터) 세팅
+raw_text_data = f"""
+Title: {news_title}
+Date: {news_date}
+Link: {news_link}
 """
 
+# 4. 프롬프트 (영문을 한국어 B2B 포맷으로 번역/해석 강제)
 prompt = f"""
-다음 [원문 데이터]를 분석하여 규제 정보를 추출해라. 
-반드시 아래의 JSON 키 구조를 엄격하게 따를 것.
+너는 최고의 B2B 규제 분석가야. 
+다음 [글로벌 영문 뉴스 데이터]를 분석해서, 한국 수출 기업들이 대응해야 할 핵심 내용을 한국어 JSON 형식으로 추출해.
+반드시 아래 키 구조를 엄격하게 지킬 것.
+
 {{
-  "regulation_target": "규제 대상 이름",
-  "affected_industry": ["산업1", "산업2"],
-  "expected_tax_penalty": "벌금/세금 상세 내용",
-  "compliance_deadline": "마감일 (YYYY-MM-DD)",
-  "action_required_for_KR_exporters": "한국 기업의 필수 조치사항"
+  "source_title": "뉴스 제목 (한국어 번역)",
+  "original_link": "원본 뉴스 링크",
+  "published_date": "발행일",
+  "global_regulation_trend": "이 뉴스가 시사하는 글로벌 규제 동향 요약 (한국어)",
+  "warning_for_KR_business": "한국 B2B 기업이 주의해야 할 점 또는 기회 (한국어 1문장)"
 }}
-[원문 데이터]
+
+[글로벌 영문 뉴스 데이터]
 {raw_text_data}
 """
 
-print("데이터 추출 중...")
+print("🧠 AI 분석 및 JSON 가공 중...")
 response = model.generate_content(prompt)
 parsed_json = json.loads(response.text)
 
-# 4. 추출된 데이터를 'cbam_data.json' 이라는 파일로 자동 저장합니다.
-with open('cbam_data.json', 'w', encoding='utf-8') as f:
+# 5. 완성된 데이터를 파일로 덮어쓰기 저장
+file_name = 'global_esg_live.json'
+with open(file_name, 'w', encoding='utf-8') as f:
     json.dump(parsed_json, f, indent=2, ensure_ascii=False)
 
-print("✅ 데이터 저장 완료: cbam_data.json")
+print(f"✅ 실시간 글로벌 규제 데이터 저장 완료: {file_name}")
