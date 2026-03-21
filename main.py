@@ -3,7 +3,7 @@ import google.generativeai as genai
 import json
 
 # 1. 깃허브 금고(Secrets)에서 API 키를 몰래 꺼내옵니다.
-API_KEY = os.environ.get("AIzaSyD9KNUTWZWIKYISaOe-lJ8B_OOl-xzF8w4")
+API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=API_KEY)
 
 # 2. 3.x Flash 엔진 점화
