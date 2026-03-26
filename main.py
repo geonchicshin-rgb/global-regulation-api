@@ -30,11 +30,18 @@ else:
     print(f"✅ 내 열쇠로 쓸 수 있는 모델들: {available_models}")
     print(f"🚀 자동 선택된 최적의 모델: {best_model}")
 
-# 2. [초정밀 타겟팅] 한국 수출 3대 핵심 규제
+## 2. [초정밀 타겟팅] 한국 B2B 수출을 위협하는 글로벌 10대 핵심 규제
 targets = {
-    "CBAM (탄소국경조정제도)": "CBAM regulation Europe",
-    "CSDDD (공급망실사지침)": "CSDDD ESG supply chain",
-    "EUDR (산림벌채규정)": "EUDR deforestation regulation"
+    "CBAM (탄소국경조정제도)": "EU CBAM regulation carbon border tax",
+    "CSDDD (공급망실사지침)": "EU CSDDD ESG supply chain due diligence",
+    "EUDR (산림벌채규정)": "EUDR deforestation regulation compliance",
+    "US IRA (미국 인플레이션감축법)": "US IRA Inflation Reduction Act supply chain",
+    "SEC 기후공시 (미국 증권거래위원회)": "US SEC climate disclosure rules ESG",
+    "CSRD (기업지속가능성보고지침)": "EU CSRD corporate sustainability reporting",
+    "ESPR (에코디자인 규정)": "EU ESPR Ecodesign for Sustainable Products",
+    "Battery Passport (유럽 배터리법)": "EU Battery Regulation digital passport",
+    "PFAS Restriction (영원한 화학물질 규제)": "EU PFAS restriction chemical regulation",
+    "UFLPA (위구르강제노동방지법)": "US UFLPA Uyghur Forced Labor Prevention Act"
 }
 
 new_results = []
