@@ -28,9 +28,7 @@
         .buy-btn { display: block; background: #0f172a; color: white; text-align: center; padding: 18px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 1.1rem; transition: 0.3s; }
         .buy-btn:hover { background: #ef4444; }
     </style>
-<!-- 나중에 여기에 Skimlinks 코드를 붙여넣습니다 -->
-    <script type="text/javascript" src="https://s.skimresources.com/js/건식님고유번호.skimlinks.js"></script>
-</head>
+    <!-- 나중에 이곳에 Skimlinks 자바스크립트 코드가 들어갈 예정입니다 -->
 </head>
 <body>
 
@@ -79,10 +77,12 @@
             const card = document.createElement('div');
             card.className = 'deal-card';
             
+            // 데이터가 없으면 표시하지 않고 넘어감 (에러 방지)
+            if(!item[`${currentLang}_title`]) return;
+
             const title = item[`${currentLang}_title`];
             const content = item[`${currentLang}_sales_copy`];
             
-            // 버튼 텍스트 현지화
             const btnText = {
                 'korean': '지금 당장 할인가로 구매하기 ➔',
                 'english': 'GET THE DEAL NOW ➔',
