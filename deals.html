@@ -28,6 +28,9 @@
         .buy-btn { display: block; background: #0f172a; color: white; text-align: center; padding: 18px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 1.1rem; transition: 0.3s; }
         .buy-btn:hover { background: #ef4444; }
     </style>
+<!-- 나중에 여기에 Skimlinks 코드를 붙여넣습니다 -->
+    <script type="text/javascript" src="https://s.skimresources.com/js/건식님고유번호.skimlinks.js"></script>
+</head>
 </head>
 <body>
 
@@ -39,6 +42,7 @@
 
     <div class="lang-selector">
         <button class="lang-btn active" onclick="changeLang('english')">English 🇺🇸</button>
+        <button class="lang-btn" onclick="changeLang('korean')">한국어 🇰🇷</button>
         <button class="lang-btn" onclick="changeLang('spanish')">Español 🇪🇸</button>
         <button class="lang-btn" onclick="changeLang('japanese')">日本語 🇯🇵</button>
     </div>
@@ -80,6 +84,7 @@
             
             // 버튼 텍스트 현지화
             const btnText = {
+                'korean': '지금 당장 할인가로 구매하기 ➔',
                 'english': 'GET THE DEAL NOW ➔',
                 'spanish': 'OBTENER OFERTA YA ➔',
                 'japanese': '今すぐお得に購入する ➔'
