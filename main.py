@@ -11,7 +11,7 @@ genai.configure(api_key=API_KEY)
 
 # 2. 최신 3세대 Flash 엔진 점화 (안정성과 지능 동시 확보, JSON 강제화)
 model = genai.GenerativeModel(
-    model_name="gemini-3-flash", 
+    model_name="gemini-2.0-flash",
     generation_config={"temperature": 0.1, "response_mime_type": "application/json"}
 )
 
