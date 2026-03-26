@@ -3,7 +3,7 @@ import json
 import time
 import requests
 from bs4 import BeautifulSoup
-from google import genai  # 최신 SDK 사용
+from google import genai
 
 # 1. 깃허브 금고에서 API 키 로드
 API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -34,13 +34,12 @@ for category, query in targets.items():
     news_link = latest_item.link.text
     news_date = latest_item.pubDate.text
     
-    # 3. 신형 엔진(gemini-2.0-flash) 호출 (가장 안정적인 최신 표준)
-    prompt = f"당신은 B2B 전문 분석가입니다. 다음 뉴스를 한국어로 요약하고 한국 수출 기업을 위한 주의사항을 JSON으로 작성하세요. 카테고리: {category}, 제목: {news_title}, 링크: {news_link}"
+    # 3. [핵심] 가장 안정적인 1.5-flash 모델로 강제 고정!
+    prompt = f"당신은 B2B 전문 분석가입니다. 다음 뉴스를 한국어로 요약하고 한국 수출 기업을 위한 주의사항을 JSON으로 작성하세요. 카테고리: {category}, 제목: {news_title}, 링크: {news_link}, 날짜: {news_date}"
     
     try:
-        # 최신 SDK의 호출 방식입니다.
         res = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-1.5-flash", 
             contents=prompt,
             config={
                 'response_mime_type': 'application/json',
@@ -63,6 +62,7 @@ for category, query in targets.items():
     except Exception as e:
         print(f"❌ {category} 분석 실패: {e}")
         
+    # AI API 과부하 방지 (2초 대기)
     time.sleep(2)
 
 # 4. 데이터 저장 로직 (누적형)
