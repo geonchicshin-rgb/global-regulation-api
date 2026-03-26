@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Hot Deals - Daily AI Curated Sales</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { text-align: center; padding: 60px 0; background: #ffffff; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 40px; }
+        .header h1 { font-size: 3.5rem; margin: 0; color: #ef4444; font-weight: 800; text-transform: uppercase; letter-spacing: -2px; }
+        .header p { font-size: 1.2rem; color: #64748b; margin-top: 10px; }
+        
+        .lang-selector { text-align: center; margin-bottom: 40px; }
+        .lang-btn { background: #fff; border: 2px solid #e2e8f0; color: #475569; padding: 12px 24px; border-radius: 50px; cursor: pointer; margin: 0 8px; font-weight: 600; transition: 0.3s; }
+        .lang-btn.active { background: #ef4444; border-color: #ef4444; color: white; transform: scale(1.1); }
+
+        .deals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .deal-card { background: white; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; transition: 0.3s; position: relative; }
+        .deal-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .badge { position: absolute; top: 15px; left: 15px; background: #facc15; color: #000; padding: 5px 15px; border-radius: 50px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+        
+        .card-body { padding: 25px; }
+        .title { font-size: 1.4rem; font-weight: 800; line-height: 1.3; margin-bottom: 15px; color: #0f172a; }
+        .content { font-size: 1rem; line-height: 1.6; color: #475569; margin-bottom: 25px; }
+        
+        .buy-btn { display: block; background: #0f172a; color: white; text-align: center; padding: 18px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 1.1rem; transition: 0.3s; }
+        .buy-btn:hover { background: #ef4444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🔥 HOT DEALS SNIPER</h1>
+        <p>AI-Powered Real-Time Global Discount Finder</p>
+    </div>
+
+    <div class="lang-selector">
+        <button class="lang-btn active" onclick="changeLang('english')">English 🇺🇸</button>
+        <button class="lang-btn" onclick="changeLang('spanish')">Español 🇪🇸</button>
+        <button class="lang-btn" onclick="changeLang('japanese')">日本語 🇯🇵</button>
+    </div>
+
+    <div id="deals-container" class="deals-grid"></div>
+</div>
+
+<script>
+    let dealData = [];
+    let currentLang = 'english';
+
+    async function loadDeals() {
+        try {
+            const response = await fetch('./global_hot_deals.json');
+            dealData = await response.json();
+            renderDeals();
+        } catch (error) {
+            console.error("Error loading deal data:", error);
+        }
+    }
+
+    function changeLang(lang) {
+        currentLang = lang;
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        renderDeals();
+    }
+
+    function renderDeals() {
+        const container = document.getElementById('deals-container');
+        container.innerHTML = '';
+
+        dealData.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'deal-card';
+            
+            const title = item[`${currentLang}_title`];
+            const content = item[`${currentLang}_sales_copy`];
+            
+            // 버튼 텍스트 현지화
+            const btnText = {
+                'english': 'GET THE DEAL NOW ➔',
+                'spanish': 'OBTENER OFERTA YA ➔',
+                'japanese': '今すぐお得に購入する ➔'
+            };
+
+            card.innerHTML = `
+                <div class="badge">${item.deal_category}</div>
+                <div class="card-body">
+                    <div class="title">${title}</div>
+                    <div class="content">${content}</div>
+                    <a href="${item.original_link}" target="_blank" class="buy-btn">${btnText[currentLang]}</a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    loadDeals();
+</script>
+
+</body>
+</html>
