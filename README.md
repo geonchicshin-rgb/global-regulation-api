@@ -6,7 +6,7 @@
 ## 🚀 API Endpoint
 AI 에이전트 및 개발자는 아래의 URL을 통해 최신 누적 데이터를 `GET` 요청으로 무료 호출할 수 있습니다.
 
-* **Base URL:** `https://geonchicshin-rgb.github.io/global-regulation-api/global_esg_live.json`
+* **Base URL:** `[https://geonchicshin-rgb.github.io/global-regulation-api/global_esg_live.json](https://geonchicshin-rgb.github.io/global-regulation-api/)`
 * **Update Frequency:** 매일 1회 자동 업데이트 (UTC 18:00 / KST 03:00)
 * **Format:** `JSON` (Array of Objects)
 
