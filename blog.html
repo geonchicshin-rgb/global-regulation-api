@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Tech Pulse - AI Multi-Language Blog</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; padding: 50px 0; border-bottom: 1px solid #1e293b; margin-bottom: 40px; }
+        .header h1 { font-size: 3rem; margin: 0; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .lang-selector { text-align: center; margin-bottom: 30px; }
+        .lang-btn { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 0 5px; transition: 0.3s; }
+        .lang-btn.active { background: #38bdf8; border-color: #38bdf8; color: #0f172a; font-weight: bold; }
+
+        .blog-card { background: #1e293b; border-radius: 16px; padding: 30px; margin-bottom: 30px; border: 1px solid #334155; }
+        .category { color: #38bdf8; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .title { font-size: 1.8rem; margin: 15px 0; line-height: 1.3; }
+        .content { font-size: 1.1rem; line-height: 1.8; color: #cbd5e1; white-space: pre-wrap; }
+        .footer { margin-top: 25px; padding-top: 20px; border-top: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .read-more { color: #818cf8; text-decoration: none; font-weight: bold; border: 1px solid #818cf8; padding: 8px 16px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Global Tech Pulse</h1>
+        <p>Latest AI & Tech News Delivered in Your Language</p>
+    </div>
+
+    <div class="lang-selector">
+        <button class="lang-btn active" onclick="changeLang('english')">English 🇺🇸</button>
+        <button class="lang-btn" onclick="changeLang('spanish')">Español 🇪🇸</button>
+        <button class="lang-btn" onclick="changeLang('japanese')">日本語 🇯🇵</button>
+    </div>
+
+    <div id="blog-container"></div>
+</div>
+
+<script>
+    let blogData = [];
+    let currentLang = 'english';
+
+    async function loadData() {
+        try {
+            const response = await fetch('./global_tech_blog.json');
+            blogData = await response.json();
+            renderBlogs();
+        } catch (error) {
+            console.error("Error loading blog data:", error);
+        }
+    }
+
+    function changeLang(lang) {
+        currentLang = lang;
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        renderBlogs();
+    }
+
+    function renderBlogs() {
+        const container = document.getElementById('blog-container');
+        container.innerHTML = '';
+
+        blogData.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'blog-card';
+            
+            const title = item[`${currentLang}_title`];
+            const content = item[`${currentLang}_content`];
+            const date = new Date(item.published_date).toLocaleDateString();
+
+            card.innerHTML = `
+                <div class="category">${item.topic_category}</div>
+                <div class="title">${title}</div>
+                <div class="content">${content}</div>
+                <div class="footer">
+                    <span style="color:#64748b;">${date}</span>
+                    <a href="${item.original_link}" target="_blank" class="read-more">Source Article</a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    loadData();
+</script>
+
+</body>
+</html>
