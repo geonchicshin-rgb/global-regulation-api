@@ -1,24 +1,14 @@
 # .github/workflows/daily_harvest.yml
 # =====================================================================
-# B2A Oracle — Automated Market Data Harvester
-# Runs auto_collector.py every 4 hours and commits market_history.jsonl
-# back to the repository for a fully auditable data trail.
-#
-# Required GitHub Repository Secrets (Settings > Secrets > Actions):
-#   EBAY_APP_ID   — eBay Developer App ID (optional; RSS fallback used if absent)
-#
-# No other secrets are needed. FX and WTI sources are key-free.
+# B2A Oracle — Automated Market Data Harvester (AI-Powered)
 # =====================================================================
 
 name: B2A Market Data Harvest
 
 on:
-  # ── Scheduled trigger: every 4 hours ──────────────────────────────
   schedule:
-    - cron: "0 */4 * * *"   # 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC
-
-  # ── Allow manual trigger from the Actions tab ─────────────────────
-  workflow_dispatch:
+    - cron: "0 */4 * * *"   # 4시간마다 자동 실행
+  workflow_dispatch:        # 수동 실행 버튼
     inputs:
       reason:
         description: "Reason for manual run"
@@ -30,47 +20,42 @@ jobs:
     name: Harvest Market Data
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # needed to push market_history.jsonl back to repo
+      contents: write       # 결과물 저장을 위한 쓰기 권한
 
     steps:
-      # ── 1. Check out the repository ─────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1      # shallow clone is sufficient
+          fetch-depth: 1
 
-      # ── 2. Set up Python ────────────────────────────────────────────
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
 
-      # ── 3. Install dependencies ──────────────────────────────────────
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # ── 4. Run the data collector ────────────────────────────────────
-      #       Secrets are injected as environment variables.
-      #       ZERO SECRETS POLICY: values come from GitHub Secrets only.
       - name: Run auto_collector.py
         env:
+          # 🔐 깃허브 금고(Secrets)에서 열쇠를 꺼내 AI 엔진에 주입합니다.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           EBAY_APP_ID: ${{ secrets.EBAY_APP_ID }}
         run: python auto_collector.py
 
-      # ── 5. Commit updated market_history.jsonl back to the repo ─────
-      - name: Commit market data
+      - name: Commit and Push results
         run: |
           git config --global user.name  "B2A Oracle Bot"
           git config --global user.email "oracle-bot@b2a-oracle.github"
-          git add market_history.jsonl
-          # Only commit if there are staged changes
-          git diff --staged --quiet || git commit -m \
-            "chore(harvest): auto-collect market data @ $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-      # ── 6. Push the commit ──────────────────────────────────────────
-      - name: Push changes
-        uses: ad-m/github-push-action@v0.8.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name }}
+          
+          # 새로 생성된 모든 데이터 파일을 추적합니다.
+          git add .
+          
+          # 변경사항이 있을 때만 기록을 남깁니다.
+          if git diff --staged --quiet; then
+            echo "No data changes detected."
+          else
+            git commit -m "🤖 AI Data Auto-Update: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push
+          fi
