@@ -1,0 +1,76 @@
+# .github/workflows/daily_harvest.yml
+# =====================================================================
+# B2A Oracle — Automated Market Data Harvester
+# Runs auto_collector.py every 4 hours and commits market_history.jsonl
+# back to the repository for a fully auditable data trail.
+#
+# Required GitHub Repository Secrets (Settings > Secrets > Actions):
+#   EBAY_APP_ID   — eBay Developer App ID (optional; RSS fallback used if absent)
+#
+# No other secrets are needed. FX and WTI sources are key-free.
+# =====================================================================
+
+name: B2A Market Data Harvest
+
+on:
+  # ── Scheduled trigger: every 4 hours ──────────────────────────────
+  schedule:
+    - cron: "0 */4 * * *"   # 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC
+
+  # ── Allow manual trigger from the Actions tab ─────────────────────
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual run"
+        required: false
+        default: "Manual test harvest"
+
+jobs:
+  harvest:
+    name: Harvest Market Data
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to push market_history.jsonl back to repo
+
+    steps:
+      # ── 1. Check out the repository ─────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1      # shallow clone is sufficient
+
+      # ── 2. Set up Python ────────────────────────────────────────────
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      # ── 3. Install dependencies ──────────────────────────────────────
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 4. Run the data collector ────────────────────────────────────
+      #       Secrets are injected as environment variables.
+      #       ZERO SECRETS POLICY: values come from GitHub Secrets only.
+      - name: Run auto_collector.py
+        env:
+          EBAY_APP_ID: ${{ secrets.EBAY_APP_ID }}
+        run: python auto_collector.py
+
+      # ── 5. Commit updated market_history.jsonl back to the repo ─────
+      - name: Commit market data
+        run: |
+          git config --global user.name  "B2A Oracle Bot"
+          git config --global user.email "oracle-bot@b2a-oracle.github"
+          git add market_history.jsonl
+          # Only commit if there are staged changes
+          git diff --staged --quiet || git commit -m \
+            "chore(harvest): auto-collect market data @ $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      # ── 6. Push the commit ──────────────────────────────────────────
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}

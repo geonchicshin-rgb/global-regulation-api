@@ -2,3 +2,21 @@ requests
 beautifulsoup4
 google-genai
 lxml
+
+# B2A Oracle — Python Dependencies
+# Run: pip install -r requirements.txt
+
+# HTTP requests
+requests>=2.32.0
+
+# RSS feed parsing (used by oracle_engine.py and auto_collector.py)
+feedparser>=6.0.11
+
+# Environment variable loader (ZERO SECRETS POLICY)
+python-dotenv>=1.0.0
+
+# Google Gemini SDK (used by oracle_engine.py)
+google-genai>=1.0.0
+
+# RSA signing (used by oracle_engine.py)
+cryptography>=42.0.0
