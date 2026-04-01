@@ -9,7 +9,15 @@ CONFIDENCE_THRESHOLD = 90
 AUDIT_LOG_FILE = "audit_history.jsonl"
 
 def generate_rsa_signature(payload_str: str):
-    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    # [PIVOT 1] 지휘관님의 영구 인감을 우선적으로 찾습니다.
+    private_key_str = os.getenv("RSA_PRIVATE_KEY", "")
+    
+    if private_key_str:
+        private_key = serialization.load_pem_private_key(private_key_str.encode(), password=None)
+    else:
+        # 로컬 테스트용 임시 도장
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        
     signature = private_key.sign(payload_str.encode(), padding.PKCS1v15(), hashes.SHA256())
     pub_pem = private_key.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo).decode()
     return base64.b64encode(signature).decode(), pub_pem
@@ -23,33 +31,41 @@ def generate_insight(record: dict) -> str:
     news = feedparser.parse("https://finance.yahoo.com/news/rssindex").entries[:2]
     headlines = [n.title for n in news]
     
-    prompt = f"""당신은 B2A 전략 오라클입니다. 
-    시장수치: 환율 {record.get('usd_krw',{}).get('rate')}원, 유가 {record.get('wti_crude',{}).get('price')}달러
-    최신뉴스: {headlines}
+    # [PIVOT 2] K-Deal 데이터 추출 (auto_collector에서 넘겨준 실데이터)
+    k_deals = record.get("k_deals", {}).get("deals", [])
+    fx_rate = record.get('usd_krw',{}).get('rate', 'N/A')
+    wti_price = record.get('wti_crude',{}).get('price', 'N/A')
     
-    위 데이터를 분석하여 '역직구(한국->해외) 수익성'을 JSON으로만 답하세요.
-    {{ "signal": "CLEAR/RESTRICTED", "confidence": 0-100, "reason": "한 문장 분석" }}
+    prompt = f"""당신은 B2A 역직구 전략 오라클입니다. 
+    시장수치: 환율 {fx_rate}원, 유가 {wti_price}달러
+    최신뉴스: {headlines}
+    수집된 한국 핫딜(K-Deals): {k_deals}
+    
+    위 데이터를 분석하여 '역직구(한국->해외) 마진'이 가장 좋은 상품을 하나 찾아 JSON으로만 답하세요.
+    반드시 다음 포맷을 지키세요:
+    {{ 
+      "signal": "CLEAR" 혹은 "RESTRICTED", 
+      "confidence": 0-100, 
+      "target_item": "가장 수익성 높은 상품명 (없으면 null)",
+      "reason": "해당 상품을 선택한 이유와 예상 마진에 대한 한 문장 분석" 
+    }}
     """
     
-    # 🧠 [업그레이드] 지휘관님의 '동적 모델 탐색 + 폭포수 생존 로직'
+    # 🧠 폭포수 생존 로직 (지휘관님 원본 유지)
     try:
-        # 사용 가능한 모델 목록을 가져와서 'flash'와 'gemini'가 포함된 것만 추림
         available_models = [m.name for m in client.models.list() if "gemini" in m.name and "flash" in m.name]
-        # 이름순으로 역순 정렬 (예: 2.5-flash -> 2.0-flash -> 1.5-flash 순으로 배치)
         available_models.sort(reverse=True)
     except Exception:
-        # API 조회 실패 시 최후의 보루
         available_models = ["gemini-1.5-flash"]
         
-    # 높은 버전부터 차례대로 타격 시도
     for model_id in available_models:
         clean_model_name = model_id.replace("models/", "")
         try:
-            # 해당 모델로 생성 시도
             response = client.models.generate_content(model=clean_model_name, contents=prompt)
             res_json = json.loads(response.text.strip().replace("```json", "").replace("```", ""))
             
-            if res_json.get('confidence', 0) < CONFIDENCE_THRESHOLD: 
+            # 확신도가 낮거나 추천 상품이 없으면 방어 태세 전환
+            if res_json.get('confidence', 0) < CONFIDENCE_THRESHOLD or not res_json.get('target_item'): 
                 res_json['signal'] = "STANDBY"
             
             # RSA 서명 날인
@@ -57,13 +73,13 @@ def generate_insight(record: dict) -> str:
             sig, pub = generate_rsa_signature(payload_str)
             res_json.update({"rsa_sig": sig, "timestamp": datetime.datetime.now().isoformat()})
             
-            # 감사 로그 기록 (어떤 모델이 성공했는지도 함께 기록)
+            # 감사 로그 기록
             with open(AUDIT_LOG_FILE, "a") as f: f.write(json.dumps(res_json) + "\n")
             
-            return f"[{res_json['signal']}] {res_json['reason']} (Verified by {clean_model_name})"
+            # 최종 결과 출력 형식 개선 (트위터 봇이 읽기 쉽게)
+            return f"[{res_json['signal']}] 타겟: {res_json.get('target_item', 'None')} | 분석: {res_json['reason']} (Verified by {clean_model_name})"
             
         except Exception as e:
-            # 404(권한/단종) 에러가 나면 뻗지 않고 다음 모델로 넘어감(continue)
             if "404" in str(e) or "not available" in str(e).lower():
                 continue
             else:
