@@ -25,6 +25,7 @@ import requests
 import feedparser
 from dotenv import load_dotenv
 import oracle_engine
+import shipping_calculator
 
 # ── Load environment variables (ZERO SECRETS POLICY) ─────────────────────────
 load_dotenv()
@@ -230,17 +231,14 @@ def main() -> None:
     print(f"  Run timestamp: {timestamp}")
     print("=" * 60)
 
-    # MANDATORY FAIL-SAFE: outer try/except ensures STANDBY record on any crash
     try:
+        # 1. 데이터 수집
         ebay_data = fetch_ebay_tech_deals()
         fx_data   = fetch_usd_krw()
         wti_data  = fetch_wti_price()
 
-        # Determine overall collection status
         statuses = [ebay_data["status"], fx_data["status"], wti_data["status"]]
-        all_ok   = all(s == "OK" for s in statuses)
-        any_ok   = any(s == "OK" for s in statuses)
-        overall  = "OK" if all_ok else ("PARTIAL" if any_ok else "STANDBY")
+        overall  = "OK" if all(s == "OK" for s in statuses) else ("PARTIAL" if any(s == "OK" for s in statuses) else "STANDBY")
 
         record = {
             "timestamp"   : timestamp,
@@ -250,8 +248,21 @@ def main() -> None:
             "wti_crude"   : wti_data,
         }
         
-        # 🧠 [B2A 핵심 추가]: 수집된 데이터를 AI 오라클에게 전달하여 분석합니다.
-        # record에 'ai_analysis'라는 항목으로 AI의 판단을 추가합니다.
+        # 2. 물류비 계산 (방어적 코드 적용)
+        try:
+            fx_rate = float(fx_data.get("rate", 1500))
+            wti_price = float(wti_data.get("price", 80))
+            # 테스트용 가상 상품 (향후 K-딜 수집 데이터로 교체 예정)
+            test_item_usd = 50.0
+            test_weight = 2.0
+            
+            calc_result = shipping_calculator.calculate_landed_cost(test_item_usd, test_weight, fx_rate, wti_price)
+            record["calculated_shipping"] = calc_result
+        except Exception as e:
+            print(f"[LOGISTICS] Calculation error: {e}")
+            record["calculated_shipping"] = {"status": "ERROR"}
+
+        # 3. 오라클 AI 분석 (계산된 물류비까지 포함하여 판단)
         print("[ORACLE] 🤖 AI 분석 엔진 가동 중...")
         record["ai_analysis"] = oracle_engine.generate_insight(record)
     
@@ -264,7 +275,6 @@ def main() -> None:
             "ebay_tech"     : {"status": "STANDBY"},
             "usd_krw"       : {"status": "STANDBY"},
             "wti_crude"     : {"status": "STANDBY"},
-            # 🧠 [추가 2]: 에러 발생 시에도 데이터 형식을 맞추기 위해 '대기' 상태를 넣습니다.
             "ai_analysis"   : "STANDBY - System Error"
         }
 
@@ -274,6 +284,20 @@ def main() -> None:
     print(f"  Harvest complete. Status: {record['overall_status']}")
     print("=" * 60)
 
+def run_harvest():
+    # ... (환율, 유가 수집 로직) ...
+    
+    # 임시 상품 데이터 (이베이 API 미작동 시 테스트용)
+    test_item = {"name": "K-Beauty Set", "price_usd": 50, "weight": 2}
+    
+    # 실시간 배송비 계산 적용
+    landed_cost = shipping_calculator.get_shipping_cost(
+        test_item['weight'], data['usd_krw']['rate'], data['wti_crude']['price']
+    )
+    
+    # 오라클 분석 호출 (드디어 연결!)
+    data['ai_analysis'] = oracle_engine.generate_insight(data)
+    data['calculated_shipping_krw'] = landed_cost
 
 if __name__ == "__main__":
     main()
