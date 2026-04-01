@@ -24,6 +24,7 @@ import datetime
 import requests
 import feedparser
 from dotenv import load_dotenv
+import oracle_engine
 
 # ── Load environment variables (ZERO SECRETS POLICY) ─────────────────────────
 load_dotenv()
@@ -248,7 +249,12 @@ def main() -> None:
             "usd_krw"     : fx_data,
             "wti_crude"   : wti_data,
         }
-
+        
+        # 🧠 [B2A 핵심 추가]: 수집된 데이터를 AI 오라클에게 전달하여 분석합니다.
+        # record에 'ai_analysis'라는 항목으로 AI의 판단을 추가합니다.
+        print("[ORACLE] 🤖 AI 분석 엔진 가동 중...")
+        record["ai_analysis"] = oracle_engine.generate_insight(record)
+    
     except Exception as exc:
         print(f"[FATAL]    Unhandled error - {exc}")
         record = {
@@ -258,6 +264,8 @@ def main() -> None:
             "ebay_tech"     : {"status": "STANDBY"},
             "usd_krw"       : {"status": "STANDBY"},
             "wti_crude"     : {"status": "STANDBY"},
+            # 🧠 [추가 2]: 에러 발생 시에도 데이터 형식을 맞추기 위해 '대기' 상태를 넣습니다.
+            "ai_analysis"   : "STANDBY - System Error"
         }
 
     append_market_record(record)
